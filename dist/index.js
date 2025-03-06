@@ -116,6 +116,8 @@ function createPrompt(file, chunk, prDetails) {
 - IMPORTANT: NEVER suggest adding comments to the code.
 
 Review the following code diff in the file "${file.to}" and take the pull request title and description into account when writing the response.
+
+中文回复。并给出这个PR的release note。
   
 Pull request title: ${prDetails.title}
 Pull request description:
