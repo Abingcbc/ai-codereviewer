@@ -133,7 +133,7 @@ async function getAIResponse(prompt: string): Promise<Array<{
         : {}),
       messages: [
         {
-          role: "system",
+          role: "user",
           content: prompt,
         },
       ],

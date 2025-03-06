@@ -151,7 +151,7 @@ function getAIResponse(prompt) {
                 ? { response_format: { type: "json_object" } }
                 : {})), { messages: [
                     {
-                        role: "system",
+                        role: "user",
                         content: prompt,
                     },
                 ] }));
