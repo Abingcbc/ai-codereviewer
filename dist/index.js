@@ -114,10 +114,9 @@ function createPrompt(file, chunk, prDetails) {
 - Write the comment in GitHub Markdown format.
 - Use the given description only for the overall context and only comment the code.
 - IMPORTANT: NEVER suggest adding comments to the code.
+- 中文回复。并在comment的最后，另起一段，给出这个pull request的release note。
 
 Review the following code diff in the file "${file.to}" and take the pull request title and description into account when writing the response.
-
-中文回复。并给出这个PR的release note。
   
 Pull request title: ${prDetails.title}
 Pull request description:
