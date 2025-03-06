@@ -54,6 +54,7 @@ const OPENAI_API_MODEL = core.getInput("OPENAI_API_MODEL");
 const octokit = new rest_1.Octokit({ auth: GITHUB_TOKEN });
 const openai = new openai_1.default({
     apiKey: OPENAI_API_KEY,
+    baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1"
 });
 function getPRDetails() {
     var _a, _b;
