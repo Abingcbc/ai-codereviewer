@@ -126,7 +126,7 @@ function analyzeCodeReleaseNote(parsedDiff, prDetails) {
     });
 }
 function createPrompt(file, chunk, prDetails) {
-    return `Your task is to review pull requests. Instructions:
+    let prompt = `Your task is to review pull requests. Instructions:
 - Provide the response in following JSON format:  {"reviews": [{"lineNumber":  <line_number>, "reviewComment": "<review comment>"}]}
 - Do not give positive comments or compliments.
 - Provide comments and suggestions ONLY if there is something to improve, otherwise "reviews" should be an empty array.
@@ -154,13 +154,15 @@ ${chunk.changes
         .join("\n")}
 \`\`\`
 `;
+    console.log(prompt);
+    return prompt;
 }
 function createPromptReleaseNote(chunk, prDetails) {
     let prompt = `Your task is to generate a standard commit message and release not for the pull request. Instructions:
 - Provide the response in following format:  git message: <commit message>\n release note: <release note>
 - Write the comment in GitHub Markdown format.
 - Follow the conventional commit message format: https://www.conventionalcommits.org/en/v1.0.0/
-- Follow the release note format: https://keepachangelog.com/en/1.0.0/
+- Follow the release note format: https://keepachangelog.com/en/1.0.0/ . Only one sentence!!!
 
 Pull request title: ${prDetails.title}
 Pull request description:
