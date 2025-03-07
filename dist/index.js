@@ -293,9 +293,11 @@ function main() {
         if (comments.length > 0) {
             yield createReviewComment(prDetails.owner, prDetails.repo, prDetails.pull_number, comments);
         }
-        const commentsReleaseNote = yield analyzeCodeReleaseNote(filteredDiff, prDetails);
-        if (commentsReleaseNote.length > 0) {
-            yield createIssueComment(prDetails.owner, prDetails.repo, prDetails.pull_number, commentsReleaseNote[0].body);
+        if (eventData.action === "opened") {
+            const commentsReleaseNote = yield analyzeCodeReleaseNote(filteredDiff, prDetails);
+            if (commentsReleaseNote.length > 0) {
+                yield createIssueComment(prDetails.owner, prDetails.repo, prDetails.pull_number, commentsReleaseNote[0].body);
+            }
         }
     });
 }

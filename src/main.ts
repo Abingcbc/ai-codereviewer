@@ -311,14 +311,16 @@ async function main() {
     );
   }
 
-  const commentsReleaseNote = await analyzeCodeReleaseNote(filteredDiff, prDetails);
-  if (commentsReleaseNote.length > 0) {
-    await createIssueComment(
-      prDetails.owner,
-      prDetails.repo,
-      prDetails.pull_number,
-      commentsReleaseNote[0].body
-    );
+  if (eventData.action === "opened") {
+    const commentsReleaseNote = await analyzeCodeReleaseNote(filteredDiff, prDetails);
+    if (commentsReleaseNote.length > 0) {
+      await createIssueComment(
+        prDetails.owner,
+        prDetails.repo,
+        prDetails.pull_number,
+        commentsReleaseNote[0].body
+      );
+    }
   }
 }
 
