@@ -312,12 +312,12 @@ async function main() {
   }
 
   const commentsReleaseNote = await analyzeCodeReleaseNote(filteredDiff, prDetails);
-  if (comments.length > 0) {
+  if (commentsReleaseNote.length > 0) {
     await createIssueComment(
       prDetails.owner,
       prDetails.repo,
       prDetails.pull_number,
-      comments[0].body
+      commentsReleaseNote[0].body
     );
   }
 }
