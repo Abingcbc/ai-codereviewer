@@ -94,7 +94,7 @@ function analyzeCode(parsedDiff, prDetails) {
                 continue; // Ignore deleted files
             for (const chunk of file.chunks) {
                 const prompt = createPrompt(file, chunk, prDetails);
-                const aiResponse = yield getAIResponse(prompt);
+                const aiResponse = yield getAIResponse(prompt, true);
                 if (aiResponse) {
                     const newComments = createComment(file, chunk, aiResponse);
                     if (newComments) {
@@ -102,6 +102,25 @@ function analyzeCode(parsedDiff, prDetails) {
                     }
                 }
             }
+        }
+        return comments;
+    });
+}
+function analyzeCodeReleaseNote(parsedDiff, prDetails) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const comments = [];
+        const chunks = [];
+        for (const file of parsedDiff) {
+            if (file.to === "/dev/null")
+                continue; // Ignore deleted files
+            for (const chunk of file.chunks) {
+                chunks.push(chunk);
+            }
+        }
+        const prompt = createPromptReleaseNote(chunks, prDetails);
+        const aiResponse = yield getAIResponse(prompt, false);
+        if (aiResponse) {
+            comments.push({ body: aiResponse[0].reviewComment, path: "", line: 0 });
         }
         return comments;
     });
@@ -114,7 +133,7 @@ function createPrompt(file, chunk, prDetails) {
 - Write the comment in GitHub Markdown format.
 - Use the given description only for the overall context and only comment the code.
 - IMPORTANT: NEVER suggest adding comments to the code.
-- 中文回复。并在comment的最后，另起一段，给出这个pull request的release note。
+- 中文回复
 
 Review the following code diff in the file "${file.to}" and take the pull request title and description into account when writing the response.
   
@@ -136,8 +155,38 @@ ${chunk.changes
 \`\`\`
 `;
 }
-function getAIResponse(prompt) {
-    var _a, _b;
+function createPromptReleaseNote(chunk, prDetails) {
+    let prompt = `Your task is to generate a standard commit message and release not for the pull request. Instructions:
+- Provide the response in following format:  git message: <commit message>\n release note: <release note>
+- Write the comment in GitHub Markdown format.
+- Follow the conventional commit message format: https://www.conventionalcommits.org/en/v1.0.0/
+- Follow the release note format: https://keepachangelog.com/en/1.0.0/
+
+Pull request title: ${prDetails.title}
+Pull request description:
+
+---
+${prDetails.description}
+---
+
+Git diff to review:
+`;
+    // 遍历file和chunk，把diff的内容放在这里
+    for (let i = 0; i < chunk.length; i++) {
+        prompt += `\`\`\`diff
+${chunk[i].content}
+${chunk[i].changes
+            // @ts-expect-error - ln and ln2 exists where needed
+            .map((c) => `${c.ln ? c.ln : c.ln2} ${c.content}`)
+            .join("\n")}
+\`\`\`
+`;
+    }
+    console.log(prompt);
+    return prompt;
+}
+function getAIResponse(prompt, jsonResponse) {
+    var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
         const queryConfig = {
             model: OPENAI_API_MODEL,
@@ -148,7 +197,7 @@ function getAIResponse(prompt) {
             presence_penalty: 0,
         };
         try {
-            const response = yield openai.chat.completions.create(Object.assign(Object.assign(Object.assign({}, queryConfig), (OPENAI_API_MODEL === "qwen-max"
+            const response = yield openai.chat.completions.create(Object.assign(Object.assign(Object.assign({}, queryConfig), (jsonResponse
                 ? { response_format: { type: "json_object" } }
                 : {})), { messages: [
                     {
@@ -156,8 +205,11 @@ function getAIResponse(prompt) {
                         content: prompt,
                     },
                 ] }));
-            const res = ((_b = (_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) === null || _b === void 0 ? void 0 : _b.trim()) || "{}";
-            return JSON.parse(res).reviews;
+            if (jsonResponse) {
+                const res = ((_b = (_a = response.choices[0].message) === null || _a === void 0 ? void 0 : _a.content) === null || _b === void 0 ? void 0 : _b.trim()) || "{}";
+                return JSON.parse(res).reviews;
+            }
+            return [{ lineNumber: "1", reviewComment: ((_d = (_c = response.choices[0].message) === null || _c === void 0 ? void 0 : _c.content) === null || _d === void 0 ? void 0 : _d.trim()) || "" }];
         }
         catch (error) {
             console.error("Error:", error);
@@ -185,6 +237,16 @@ function createReviewComment(owner, repo, pull_number, comments) {
             pull_number,
             comments,
             event: "COMMENT",
+        });
+    });
+}
+function createIssueComment(owner, repo, issue_number, body) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield octokit.rest.issues.createComment({
+            owner,
+            repo,
+            issue_number,
+            body,
         });
     });
 }
@@ -230,6 +292,10 @@ function main() {
         const comments = yield analyzeCode(filteredDiff, prDetails);
         if (comments.length > 0) {
             yield createReviewComment(prDetails.owner, prDetails.repo, prDetails.pull_number, comments);
+        }
+        const commentsReleaseNote = yield analyzeCodeReleaseNote(filteredDiff, prDetails);
+        if (comments.length > 0) {
+            yield createIssueComment(prDetails.owner, prDetails.repo, prDetails.pull_number, comments[0].body);
         }
     });
 }
